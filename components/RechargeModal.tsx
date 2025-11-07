@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { XCircleIcon, CheckCircleIcon, StackedCoinIcon } from './icons';
-import type { RechargeOption } from '../types';
-import { rechargeOptions } from '../data/mockData';
+import { XCircleIcon, CheckCircleIcon, StackedCoinIcon } from './icons.tsx';
+import type { RechargeOption } from '../types.ts';
+import { rechargeOptions } from '../data/mockData.ts';
 
 interface RechargeModalProps {
     isOpen: boolean;

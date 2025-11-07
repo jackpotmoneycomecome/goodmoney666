@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import type { Transaction, PrizeInstance } from '../types';
+import type { Transaction, PrizeInstance } from '../types.ts';
 
 interface AdminTransactionHistoryProps {
     transactions: Transaction[];

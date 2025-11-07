@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
-import { ChevronLeftIcon } from './icons';
-import { sha256 } from '../utils/crypto';
-import type { Order, LotterySet, Prize, PrizeInstance, AppState } from '../types';
+import { ChevronLeftIcon } from './icons.tsx';
+import { sha256 } from '../utils/crypto.ts';
+import type { Order, LotterySet, Prize, PrizeInstance, AppState } from '../types.ts';
 
 interface VerificationPageProps {
     onBack: () => void;

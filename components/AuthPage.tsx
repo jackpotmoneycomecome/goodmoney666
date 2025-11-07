@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
-import { GoogleIcon } from './icons';
+import { GoogleIcon } from './icons.tsx';
 // MODIFICATION: Import AppState from the correct central types file.
-import type { AppState } from '../types';
+import type { AppState } from '../types.ts';
 
 interface AuthPageProps {
   state: AppState;

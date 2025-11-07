@@ -1,14 +1,15 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 // MODIFICATION: Import AppState from the correct central types file.
-import type { LotterySet, Prize, User, PrizeInstance, AppState } from '../types';
-import { ChevronLeftIcon, ChevronRightIcon, TreasureChestIcon, StackedCoinIcon } from './icons';
-import { sha256 } from '../utils/crypto';
-import { TicketBoard } from './TicketBoard';
-import { DrawControlPanel } from './DrawControlPanel';
-import { ProductCard } from './ProductCard';
-import { QueueStatusPanel } from './QueueStatusPanel';
-import { RechargeModal } from './RechargeModal';
-import { WinnersList } from './WinnersList';
+import type { LotterySet, Prize, User, PrizeInstance, AppState } from '../types.ts';
+import { ChevronLeftIcon, ChevronRightIcon, TreasureChestIcon, StackedCoinIcon } from './icons.tsx';
+import { sha256 } from '../utils/crypto.ts';
+import { TicketBoard } from './TicketBoard.tsx';
+import { DrawControlPanel } from './DrawControlPanel.tsx';
+import { ProductCard } from './ProductCard.tsx';
+import { QueueStatusPanel } from './QueueStatusPanel.tsx';
+import { RechargeModal } from './RechargeModal.tsx';
+import { WinnersList } from './WinnersList.tsx';
 
 interface LotteryPageProps {
   lotterySet: LotterySet;

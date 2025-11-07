@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import type { SiteConfig, Banner, LotterySet, Category } from '../types';
+import type { SiteConfig, Banner, LotterySet, Category } from '../types.ts';
 
 interface AdminSiteSettingsProps {
     siteConfig: SiteConfig;

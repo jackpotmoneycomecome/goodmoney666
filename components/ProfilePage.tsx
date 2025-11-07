@@ -1,13 +1,14 @@
+
 import React, { useState, useMemo } from 'react';
 // MODIFICATION: Import AppState from the correct central types file.
-import type { User, Order, PrizeInstance, Shipment, ShippingAddress, LotterySet, PickupRequest, AppState } from '../types';
-import { ChevronLeftIcon, PlusCircleIcon, GiftIcon, ListBulletIcon, CheckCircleIcon, PackageIcon, MapPinIcon, PencilIcon, TrashIcon, BuildingStorefrontIcon } from './icons';
-import { RechargeModal } from './RechargeModal';
-import { ConfirmationModal } from './ConfirmationModal';
-import { ShippingRequestModal } from './ShippingRequestModal';
-import { AddressFormModal } from './AddressFormModal';
-import { PickupRequestModal } from './PickupRequestModal';
-import { RECYCLABLE_GRADES, RECYCLE_VALUE, SHIPPING_BASE_FEE_POINTS, SHIPPING_BASE_WEIGHT_G, SHIPPING_EXTRA_FEE_PER_KG } from '../data/mockData';
+import type { User, Order, PrizeInstance, Shipment, ShippingAddress, LotterySet, PickupRequest, AppState } from '../types.ts';
+import { ChevronLeftIcon, PlusCircleIcon, GiftIcon, ListBulletIcon, CheckCircleIcon, PackageIcon, MapPinIcon, PencilIcon, TrashIcon, BuildingStorefrontIcon } from './icons.tsx';
+import { RechargeModal } from './RechargeModal.tsx';
+import { ConfirmationModal } from './ConfirmationModal.tsx';
+import { ShippingRequestModal } from './ShippingRequestModal.tsx';
+import { AddressFormModal } from './AddressFormModal.tsx';
+import { PickupRequestModal } from './PickupRequestModal.tsx';
+import { RECYCLABLE_GRADES, RECYCLE_VALUE, SHIPPING_BASE_FEE_POINTS, SHIPPING_BASE_WEIGHT_G, SHIPPING_EXTRA_FEE_PER_KG } from '../data/mockData.ts';
 
 interface ProfilePageProps {
     user: User;

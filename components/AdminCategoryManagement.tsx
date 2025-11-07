@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import type { Category } from '../types';
+import type { Category } from '../types.ts';
 
 interface AdminCategoryManagementProps {
     categories: Category[];

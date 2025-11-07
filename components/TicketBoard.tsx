@@ -1,5 +1,6 @@
+
 import React, { useMemo } from 'react';
-import type { TicketLock, User, Prize } from '../types';
+import type { TicketLock, User, Prize } from '../types.ts';
 
 interface TicketBoardProps {
   lotteryId: string;

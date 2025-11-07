@@ -1,15 +1,16 @@
+
 import React, { useState } from 'react';
-import { AdminSiteSettings } from './AdminSiteSettings';
-import { AdminProductManagement } from './AdminProductManagement';
-import { AdminCategoryManagement } from './AdminCategoryManagement';
-import { AdminUserManagement } from './AdminUserManagement';
-import { AdminTransactionHistory } from './AdminTransactionHistory';
-import { AdminFinancialReport } from './AdminFinancialReport';
-import { AdminShipmentManagement } from './AdminShipmentManagement';
-import { AdminPickupManagement } from './AdminPickupManagement';
-import { ListBulletIcon, CogIcon, UsersIcon, TicketIcon, ChartBarIcon, TruckIcon, BuildingStorefrontIcon } from './icons';
+import { AdminSiteSettings } from './AdminSiteSettings.tsx';
+import { AdminProductManagement } from './AdminProductManagement.tsx';
+import { AdminCategoryManagement } from './AdminCategoryManagement.tsx';
+import { AdminUserManagement } from './AdminUserManagement.tsx';
+import { AdminTransactionHistory } from './AdminTransactionHistory.tsx';
+import { AdminFinancialReport } from './AdminFinancialReport.tsx';
+import { AdminShipmentManagement } from './AdminShipmentManagement.tsx';
+import { AdminPickupManagement } from './AdminPickupManagement.tsx';
+import { ListBulletIcon, CogIcon, UsersIcon, TicketIcon, ChartBarIcon, TruckIcon, BuildingStorefrontIcon } from './icons.tsx';
 // MODIFICATION: Import AppState and LotterySet from the correct central types file.
-import type { AppState, LotterySet } from '../types';
+import type { AppState, LotterySet } from '../types.ts';
 
 interface AdminPageProps {
   state: AppState;

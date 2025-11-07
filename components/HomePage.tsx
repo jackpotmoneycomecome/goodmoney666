@@ -1,8 +1,9 @@
+
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import type { AppState, LotterySet, Banner, Category, Order, User } from '../types';
-import { ProductCard } from './ProductCard';
-import { SearchIcon, XCircleIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpRightIcon } from './icons';
-import { WinnersList } from './WinnersList';
+import type { AppState, LotterySet, Banner, Category, Order, User } from '../types.ts';
+import { ProductCard } from './ProductCard.tsx';
+import { SearchIcon, XCircleIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpRightIcon } from './icons.tsx';
+import { WinnersList } from './WinnersList.tsx';
 
 // A simple banner component
 const BannerCarousel: React.FC<{ banners: Banner[], interval: number, onSelectLotteryById: (id: string) => void }> = ({ banners, interval, onSelectLotteryById }) => {
