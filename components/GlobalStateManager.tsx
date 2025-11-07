@@ -188,25 +188,24 @@ export const GlobalStateManager: React.FC = () => {
 
         const userRef = doc(db, 'users', currentUser.id);
         const lotteryRef = doc(db, 'lotterySets', lotterySetId);
-    
+
         try {
-            await runTransaction(db, async (transaction) => {
+            const drawnPrizes = await runTransaction(db, async (transaction) => {
                 const userDoc = await transaction.get(userRef);
                 const lotteryDoc = await transaction.get(lotteryRef);
-    
+
                 if (!userDoc.exists() || !lotteryDoc.exists()) throw new Error("找不到使用者或商品資料。");
-                
+
                 const userData = userDoc.data() as User;
                 const lotteryData = lotteryDoc.data() as LotterySet;
-                
+
                 if (userData.points < cost) throw new Error("點數不足。");
                 if (selectedTickets.some(t => lotteryData.drawnTicketIndices.includes(t))) throw new Error("選擇的籤已被抽出。");
-    
+
                 const prizeMap = new Map(lotteryData.prizes.map(p => [p.id, p]));
                 const drawnPrizeIds = selectedTickets.map(index => lotteryData.prizeOrder![index]);
                 const remainingTicketsBefore = lotteryData.prizes.filter(p=>p.type === 'NORMAL').reduce((s,p)=>s+p.remaining,0);
 
-                const batch = writeBatch(db);
                 const orderId = `order-${Date.now()}`;
                 const newPrizeInstances: PrizeInstance[] = [];
 
@@ -214,12 +213,9 @@ export const GlobalStateManager: React.FC = () => {
                     const prizeTemplate = prizeMap.get(prizeId);
                     if (prizeTemplate) {
                         const instanceId = `${orderId}-${prizeTemplate.id}-${index}`;
-                        // FIX: Explicitly type the new prize instance object to ensure the 'status' property
-                        // is not widened to 'string', resolving the type error. Also, use the new variable
-                        // for the batch set operation for clarity and correctness.
                         const newInstance: PrizeInstance = { ...prizeTemplate, instanceId, lotterySetId, isRecycled: false, userId: userData.id, status: 'IN_INVENTORY' };
                         newPrizeInstances.push(newInstance);
-                        batch.set(doc(db, 'prizeInstances', instanceId), newInstance);
+                        transaction.set(doc(db, 'prizeInstances', instanceId), newInstance);
                     }
                 });
 
@@ -227,10 +223,9 @@ export const GlobalStateManager: React.FC = () => {
                     const lastPrize = lotteryData.prizes.find(p => p.type === 'LAST_ONE');
                     if (lastPrize) {
                         const instanceId = `${orderId}-${lastPrize.id}-last`;
-                        // FIX: Explicitly type the last prize instance to prevent type widening on the 'status' property.
                         const lastPrizeInstance: PrizeInstance = { ...lastPrize, instanceId, lotterySetId, isRecycled: false, userId: userData.id, status: 'IN_INVENTORY' };
                         newPrizeInstances.push(lastPrizeInstance);
-                        batch.set(doc(db, 'prizeInstances', instanceId), lastPrizeInstance);
+                        transaction.set(doc(db, 'prizeInstances', instanceId), lastPrizeInstance);
                     }
                 }
                 
@@ -249,14 +244,16 @@ export const GlobalStateManager: React.FC = () => {
                 });
                 
                 const orderDoc = { id: orderId, userId: userData.id, date: serverTimestamp(), lotterySetTitle: lotteryData.title, prizeInstanceIds: newPrizeInstances.map(p => p.instanceId), costInPoints: cost, drawHash, secretKey, drawnTicketIndices: selectedTickets };
-                batch.set(doc(db, 'orders', orderId), orderDoc);
+                transaction.set(doc(db, 'orders', orderId), orderDoc);
 
-                const transactionDoc = { userId: userData.id, username: userData.username, type: 'DRAW', amount: -cost, date: serverTimestamp(), description: `抽獎: ${lotteryData.title} (${selectedTickets.length} 抽)`, prizeInstanceIds: newPrizeInstances.map(p => p.instanceId) };
-                batch.set(collection(db, 'transactions'), transactionDoc);
+                const transactionDoc = { userId: userData.id, username: userData.username, type: 'DRAW' as const, amount: -cost, date: serverTimestamp(), description: `抽獎: ${lotteryData.title} (${selectedTickets.length} 抽)`, prizeInstanceIds: newPrizeInstances.map(p => p.instanceId) };
+                const newTransactionRef = doc(collection(db, 'transactions'));
+                transaction.set(newTransactionRef, transactionDoc);
 
-                await batch.commit();
+                return newPrizeInstances;
             });
-             return { success: true, drawnPrizes: [] }; // The UI will update via listeners
+
+            return { success: true, drawnPrizes };
         } catch (e) {
             console.error("Draw transaction failed: ", e);
             return { success: false, message: e instanceof Error ? e.message : "抽獎失敗。" };
@@ -479,7 +476,10 @@ export const GlobalStateManager: React.FC = () => {
                 const drawnCount = data.drawnTicketIndices.filter(idx => data.prizeOrder && data.prizeOrder[idx] === p.id).length;
                 return {...p, remaining: p.total - drawnCount};
             });
-            sets.push({ ...data, id: doc.id, status, prizes: prizesWithRemaining });
+// FIX: The error "Property 'allowSelfPickup' does not exist on type 'unknown'" likely stems from an unsafe cast
+// from Firestore's `doc.data()`. If `allowSelfPickup` is missing from a document, it becomes `undefined`,
+// violating the `LotterySet` type. We provide a default value of `false` to ensure type safety.
+            sets.push({ ...data, id: doc.id, status, prizes: prizesWithRemaining, allowSelfPickup: data.allowSelfPickup ?? false });
         });
         dispatch({ type: 'SET_LOTTERY_SETS', payload: sets });
     });
