@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDownIcon, ChevronLeftIcon } from './icons';
 
 interface FAQItemProps {
@@ -108,7 +109,8 @@ const faqData = [
     },
 ];
 
-export const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const FAQPage: React.FC = () => {
+    const navigate = useNavigate();
     const [openIndex, setOpenIndex] = useState<number | null>(null);
 
     const handleItemClick = (index: number) => {
@@ -118,9 +120,9 @@ export const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
              <div className="relative mb-6">
-                <button onClick={onBack} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-gray-700 hover:text-black font-semibold transition-colors">
+                <button onClick={() => navigate(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-gray-700 hover:text-black font-semibold transition-colors">
                     <ChevronLeftIcon className="h-6 w-6" />
-                    <span>返回首頁</span>
+                    <span>返回</span>
                 </button>
                 <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800">常見問題</h1>
             </div>

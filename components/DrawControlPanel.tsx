@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import type { User } from '../types.ts';
-import { BoxIcon, StackedCoinIcon, PlusCircleIcon } from './icons.tsx';
+import type { User } from '../types';
+import { BoxIcon, StackedCoinIcon, PlusCircleIcon } from './icons';
 
 interface DrawControlPanelProps {
     lotteryId: string;

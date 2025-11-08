@@ -1,7 +1,6 @@
-
 import React from 'react';
-import type { LotterySet } from '../types.ts';
-import { SparklesIcon, StackedCoinIcon, TicketIcon, FireIcon, GiftIcon, WandIcon } from './icons.tsx';
+import type { LotterySet } from '../types';
+import { SparklesIcon, StackedCoinIcon, TicketIcon, FireIcon, GiftIcon, WandIcon } from './icons';
 
 export const ProductCard: React.FC<{ lottery: LotterySet; onSelect: () => void; }> = ({ lottery, onSelect }) => {
     

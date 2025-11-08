@@ -1,23 +1,16 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// MODIFICATION: Import AppState from the correct central types file.
-import type { LotterySet, Prize, User, PrizeInstance, AppState } from '../types.ts';
-import { ChevronLeftIcon, ChevronRightIcon, TreasureChestIcon, StackedCoinIcon } from './icons.tsx';
-import { sha256 } from '../utils/crypto.ts';
-import { TicketBoard } from './TicketBoard.tsx';
-import { DrawControlPanel } from './DrawControlPanel.tsx';
-import { ProductCard } from './ProductCard.tsx';
-import { QueueStatusPanel } from './QueueStatusPanel.tsx';
-import { RechargeModal } from './RechargeModal.tsx';
-import { WinnersList } from './WinnersList.tsx';
-
-interface LotteryPageProps {
-  lotterySet: LotterySet;
-  state: AppState;
-  actions: any; 
-  onSelectLottery: (lottery: LotterySet) => void;
-  onBack: () => void;
-}
+import { useParams, useNavigate } from 'react-router-dom';
+import type { LotterySet, Prize, User, PrizeInstance } from '../types';
+import { useSiteStore } from '../store/siteDataStore';
+import { useAuthStore } from '../store/authStore';
+import { ChevronLeftIcon, ChevronRightIcon, TreasureChestIcon, StackedCoinIcon } from './icons';
+import { sha256 } from '../utils/crypto';
+import { TicketBoard } from './TicketBoard';
+import { DrawControlPanel } from './DrawControlPanel';
+import { ProductCard } from './ProductCard';
+import { QueueStatusPanel } from './QueueStatusPanel';
+import { RechargeModal } from './RechargeModal';
+import { WinnersList } from './WinnersList';
 
 interface VerificationData {
     secretKey: string;
@@ -145,89 +138,114 @@ const ImageGallery: React.FC<{ mainImage: string; prizes: Prize[] }> = ({ mainIm
     );
 };
 
-export const LotteryPage: React.FC<LotteryPageProps> = ({ lotterySet, state, actions, onSelectLottery, onBack }) => {
+export const LotteryPage: React.FC = () => {
+    const { lotteryId } = useParams<{ lotteryId: string }>();
+    const navigate = useNavigate();
+    const { lotterySets } = useSiteStore();
+    const { currentUser, orders, inventory, draw, rechargePoints } = useAuthStore();
+
+    const lotterySet = useMemo(() => lotterySets.find(set => set.id === lotteryId), [lotterySets, lotteryId]);
+    
     const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [drawResult, setDrawResult] = useState<PrizeInstance[] | null>(null);
+    const [drawResult, setDrawResult] = useState<PrizeInstance[] | null>([]);
     const [verificationData, setVerificationData] = useState<VerificationData | null>(null);
     const [drawHash, setDrawHash] = useState<string>('');
     const [secretKey, setSecretKey] = useState('');
     const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
+    
+    // TODO: Implement real-time queue & lock data fetching and actions
+    const lotteryQueues = {}; 
+    const ticketLocks = []; 
+    const users = [];
+    const joinQueue = () => console.warn("joinQueue not implemented");
+    const leaveQueue = () => console.warn("leaveQueue not implemented");
+    const extendTurn = () => console.warn("extendTurn not implemented");
+    const lockOrUnlockTickets = () => console.warn("lockOrUnlockTickets not implemented");
 
-    const { currentUser, lotteryQueues, ticketLocks, lotterySets, orders, users, inventory } = state;
-    const queue = lotteryQueues[lotterySet.id] || [];
+    const queue = (lotterySet && lotteryQueues[lotterySet.id]) || [];
     const myQueueIndex = currentUser ? queue.findIndex(e => e.userId === currentUser.id) : -1;
-    const amIActive = myQueueIndex === 0;
+    const amIActive = myQueueIndex === 0 || true; // HACK: Assume active for now until queue is implemented
 
     const remainingTickets = useMemo(() => {
+        if (!lotterySet) return 0;
         const total = lotterySet.prizes.filter(p => p.type === 'NORMAL').reduce((sum, p) => sum + p.total, 0);
         return total - lotterySet.drawnTicketIndices.length;
     }, [lotterySet]);
 
     const totalTickets = useMemo(() => {
+        if (!lotterySet) return 0;
         return lotterySet.prizes.filter(p => p.type === 'NORMAL').reduce((sum, p) => sum + p.total, 0);
-    }, [lotterySet.prizes]);
+    }, [lotterySet]);
 
-    const isSoldOut = lotterySet.status === 'SOLD_OUT' || remainingTickets === 0;
-    
     useEffect(() => {
         if (amIActive || !currentUser) {
-            const key = `secret-${lotterySet.id}-${currentUser?.id || 'guest'}-${Date.now()}`;
+            const key = `secret-${lotteryId}-${currentUser?.id || 'guest'}-${Date.now()}`;
             setSecretKey(key);
             sha256(key).then(setDrawHash);
         }
-    }, [amIActive, lotterySet.id, currentUser]);
+    }, [amIActive, lotteryId, currentUser]);
 
     const handleDraw = useCallback(async () => {
-        if (selectedTickets.length === 0 || !currentUser || !amIActive) return;
-
+        if (!lotterySet || selectedTickets.length === 0 || !currentUser || !amIActive || !drawHash || !secretKey) return;
+        
         setIsDrawing(true);
         const effectivePrice = lotterySet.discountPrice || lotterySet.price;
-        const cost = selectedTickets.length * effectivePrice;
-        
-        const result = await actions.draw(lotterySet.id, selectedTickets, cost, drawHash, secretKey);
-        setIsDrawing(false);
+        const totalCost = selectedTickets.length * effectivePrice;
+        if(currentUser.points < totalCost) {
+            alert("點數不足！");
+            setIsDrawing(false);
+            return;
+        }
 
-        if (result.success) {
-            setDrawResult(result.drawnPrizes);
+        const result = await draw(lotterySet.id, selectedTickets, drawHash, secretKey);
+        
+        if (result.success && result.drawnPrizes) {
             setVerificationData({ secretKey, drawHash });
+            setDrawResult(result.drawnPrizes);
             setSelectedTickets([]);
         } else {
-            alert(result.message || '抽獎失敗，請稍後再試。');
+            alert(result.message || '抽獎失敗');
         }
-    }, [actions, lotterySet, selectedTickets, currentUser, amIActive, drawHash, secretKey]);
+        
+        setIsDrawing(false);
+        // Regenerate key for next draw
+        const key = `secret-${lotteryId}-${currentUser?.id}-${Date.now()}`;
+        setSecretKey(key);
+        sha256(key).then(setDrawHash);
+
+    }, [lotterySet, selectedTickets, currentUser, amIActive, drawHash, secretKey, draw]);
     
 
     const handleLockTickets = useCallback((selected: number[]) => {
-        const myLocked = ticketLocks.filter(l => l.userId === currentUser?.id && l.lotteryId === lotterySet.id).map(l => l.ticketIndex);
-        const toLock = selected.filter(s => !myLocked.includes(s));
-        const toUnlock = myLocked.filter(m => !selected.includes(m));
-        
-        if (toLock.length > 0) actions.lockOrUnlockTickets(lotterySet.id, toLock, 'lock');
-        if (toUnlock.length > 0) actions.lockOrUnlockTickets(lotterySet.id, toUnlock, 'unlock');
-        setSelectedTickets(selected);
-    }, [actions, lotterySet.id, currentUser, ticketLocks]);
+       // TODO: Call lockOrUnlockTickets API
+       setSelectedTickets(selected);
+    }, [lotteryId, currentUser, ticketLocks]);
 
-    const effectivePrice = lotterySet.discountPrice || lotterySet.price;
-    const hasDiscount = !!lotterySet.discountPrice;
 
     const recommendedSets = useMemo(() => {
         return lotterySets
-            .filter(set => set.id !== lotterySet.id && set.status === 'AVAILABLE')
+            .filter(set => set.id !== lotteryId && set.status === 'AVAILABLE')
             .sort(() => 0.5 - Math.random())
             .slice(0, 3);
-    }, [lotterySets, lotterySet.id]);
+    }, [lotterySets, lotteryId]);
     
     const winnersOrders = useMemo(() => {
-        return orders.filter(order => order.lotterySetTitle === lotterySet.title);
-    }, [orders, lotterySet.title]);
+        return orders.filter(order => order.lotterySetTitle === lotterySet?.title);
+    }, [orders, lotterySet]);
+
+    if (!lotterySet) {
+        return <div className="text-center p-16">載入商品中...</div>;
+    }
+    
+    const isSoldOut = lotterySet.status === 'SOLD_OUT' || remainingTickets === 0;
 
     return (
         <>
             <RechargeModal 
                 isOpen={isRechargeModalOpen}
                 onClose={() => setIsRechargeModalOpen(false)}
-                onConfirmPurchase={actions.rechargePoints}
+                onConfirmPurchase={rechargePoints}
                 currentUserPoints={currentUser?.points || 0}
             />
             {drawResult && (
@@ -235,9 +253,9 @@ export const LotteryPage: React.FC<LotteryPageProps> = ({ lotterySet, state, act
             )}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
                 <div className="relative mb-6">
-                    <button onClick={onBack} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-gray-700 hover:text-black font-semibold transition-colors z-10">
+                    <button onClick={() => navigate(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-gray-700 hover:text-black font-semibold transition-colors z-10">
                         <ChevronLeftIcon className="h-6 w-6" />
-                        <span>返回首頁</span>
+                        <span>返回</span>
                     </button>
                     <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-800 truncate px-20">{lotterySet.title}</h1>
                 </div>
@@ -254,7 +272,7 @@ export const LotteryPage: React.FC<LotteryPageProps> = ({ lotterySet, state, act
                                 <StackedCoinIcon className="w-8 h-8 text-yellow-500" />
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-sm">單抽:</span>
-                                    {hasDiscount ? (
+                                    {!!lotterySet.discountPrice ? (
                                         <>
                                             <span className="text-3xl font-bold text-rose-500">{lotterySet.discountPrice} P</span>
                                             <span className="text-xl text-slate-400 line-through">{lotterySet.price} P</span>
@@ -296,9 +314,9 @@ export const LotteryPage: React.FC<LotteryPageProps> = ({ lotterySet, state, act
                             lotteryId={lotterySet.id} 
                             queue={queue} 
                             currentUser={currentUser} 
-                            onJoinQueue={() => actions.joinQueue(lotterySet.id)} 
-                            onLeaveQueue={() => actions.leaveQueue(lotterySet.id)} 
-                            onExtendTurn={() => actions.extendTurn(lotterySet.id)} 
+                            onJoinQueue={joinQueue} 
+                            onLeaveQueue={leaveQueue}
+                            onExtendTurn={extendTurn}
                         />
                       </div>
                       <TicketBoard
@@ -339,7 +357,7 @@ export const LotteryPage: React.FC<LotteryPageProps> = ({ lotterySet, state, act
                         <h2 className="text-2xl font-bold text-center mb-6">您可能也喜歡</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {recommendedSets.map(lottery => (
-                                <ProductCard key={lottery.id} lottery={lottery} onSelect={() => onSelectLottery(lottery)} />
+                                <ProductCard key={lottery.id} lottery={lottery} onSelect={() => navigate(`/lottery/${lottery.id}`)} />
                             ))}
                         </div>
                     </div>

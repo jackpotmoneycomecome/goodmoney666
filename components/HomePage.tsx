@@ -1,9 +1,9 @@
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import type { AppState, LotterySet, Banner, Category, Order, User } from '../types.ts';
-import { ProductCard } from './ProductCard.tsx';
-import { SearchIcon, XCircleIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpRightIcon } from './icons.tsx';
-import { WinnersList } from './WinnersList.tsx';
+import { useNavigate } from 'react-router-dom';
+import type { LotterySet, Banner, Category } from '../types';
+import { useSiteStore } from '../store/siteDataStore';
+import { ProductCard } from './ProductCard';
+import { SearchIcon, XCircleIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpRightIcon } from './icons';
 
 // A simple banner component
 const BannerCarousel: React.FC<{ banners: Banner[], interval: number, onSelectLotteryById: (id: string) => void }> = ({ banners, interval, onSelectLotteryById }) => {
@@ -183,18 +183,17 @@ const CategorySidebar: React.FC<{
     );
 };
 
-interface HomePageProps {
-    onSelectLottery: (lottery: LotterySet) => void;
-    onSelectLotteryById: (id: string) => void;
-    state: AppState;
-}
 
-export const HomePage: React.FC<HomePageProps> = ({ onSelectLottery, onSelectLotteryById, state }) => {
-    const { lotterySets, siteConfig, categories, orders, users, inventory } = state;
+export const HomePage: React.FC = () => {
+    const navigate = useNavigate();
+    const { lotterySets, siteConfig, categories, isLoading } = useSiteStore();
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [categorySearchTerm, setCategorySearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'remaining-asc'>('default');
     const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+
+    const onSelectLottery = (lottery: LotterySet) => navigate(`/lottery/${lottery.id}`);
+    const onSelectLotteryById = (id: string) => navigate(`/lottery/${id}`);
 
     const getSubCategoryIds = useCallback((categoryId: string): string[] => {
         const ids: string[] = [categoryId];
@@ -278,12 +277,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectLottery, onSelectLot
         return lotterySets.filter(lottery => lottery.title.toLowerCase().includes(globalSearchTerm.toLowerCase()));
     }, [lotterySets, globalSearchTerm]);
 
-    const recentOrders = useMemo(() => {
-        return [...orders]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .slice(0, 15);
-    }, [orders]);
-
     const handleSelectCategory = (categoryId: string | null) => {
         setSelectedCategoryId(categoryId);
         setCategorySearchTerm('');
@@ -299,6 +292,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectLottery, onSelectLot
     );
 
     const isSearching = globalSearchTerm.length > 0;
+
+    if (isLoading) {
+        return <div className="text-center p-16">載入中...</div>;
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen animate-fade-in">
@@ -400,10 +397,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectLottery, onSelectLot
                             </div>
                         )}
                     </main>
-                </div>
-                
-                <div className="mt-16">
-                    <WinnersList orders={recentOrders} users={users} inventory={inventory} />
                 </div>
             </div>
         </div>

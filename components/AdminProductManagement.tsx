@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import type { LotterySet, Category, Prize } from '../types.ts';
+import type { LotterySet, Category, Prize } from '../types';
 
 interface ProductFormProps {
     lotterySet: LotterySet | Partial<LotterySet>;

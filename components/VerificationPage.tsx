@@ -1,15 +1,18 @@
-
 import React, { useState, useMemo } from 'react';
-import { ChevronLeftIcon } from './icons.tsx';
-import { sha256 } from '../utils/crypto.ts';
-import type { Order, LotterySet, Prize, PrizeInstance, AppState } from '../types.ts';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeftIcon } from './icons';
+import { sha256 } from '../utils/crypto';
+import type { Order, LotterySet, Prize, PrizeInstance } from '../types';
+import { useSiteStore } from '../store/siteDataStore';
+import { useAuthStore } from '../store/authStore';
 
-interface VerificationPageProps {
-    onBack: () => void;
-    state: AppState;
+interface FoundOrderCardProps {
+    order: Order;
+    calculatedHash: string;
+    inventory: { [key: string]: PrizeInstance };
 }
 
-const FoundOrderCard: React.FC<{ order: Order, calculatedHash: string, inventory: { [key: string]: PrizeInstance } }> = ({ order, calculatedHash, inventory }) => {
+const FoundOrderCard: React.FC<FoundOrderCardProps> = ({ order, calculatedHash, inventory }) => {
     const prizesDrawn: PrizeInstance[] = order.prizeInstanceIds.map(id => inventory[id]).filter((p): p is PrizeInstance => !!p);
 
     return (
@@ -55,17 +58,17 @@ const FoundOrderCard: React.FC<{ order: Order, calculatedHash: string, inventory
     );
 };
 
-export const VerificationPage: React.FC<VerificationPageProps> = ({ onBack, state }) => {
-    const { orders, lotterySets, inventory } = state;
+export const VerificationPage: React.FC = () => {
+    const navigate = useNavigate();
+    const { lotterySets } = useSiteStore();
+    const { orders, inventory } = useAuthStore();
     
-    // State for individual order verification
     const [secretKey, setSecretKey] = useState('');
     const [isOrderLoading, setIsOrderLoading] = useState(false);
     const [orderVerificationStatus, setOrderVerificationStatus] = useState<'idle' | 'success' | 'not_found'>('idle');
     const [foundOrder, setFoundOrder] = useState<Order | null>(null);
     const [orderCalculatedHash, setOrderCalculatedHash] = useState('');
 
-    // State for full prize pool verification
     const [selectedSetId, setSelectedSetId] = useState('');
     const [poolSeedInput, setPoolSeedInput] = useState('');
     const [prizeOrderInput, setPrizeOrderInput] = useState('');
@@ -96,7 +99,6 @@ export const VerificationPage: React.FC<VerificationPageProps> = ({ onBack, stat
         
         const order = orders.find(o => o.drawHash === hash);
 
-        // Simulate network delay
         setTimeout(() => {
             if (order) {
                 setFoundOrder(order);
@@ -119,7 +121,6 @@ export const VerificationPage: React.FC<VerificationPageProps> = ({ onBack, stat
         const dataToHash = `${poolSeedInput}|${prizeOrderInput}`;
         const calculatedHash = await sha256(dataToHash);
         
-        // Simulate network delay
         setTimeout(() => {
             setIsPoolLoading(false);
 
@@ -151,7 +152,7 @@ export const VerificationPage: React.FC<VerificationPageProps> = ({ onBack, stat
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
             <div className="relative mb-6">
-                <button onClick={onBack} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-black hover:text-gray-700 font-semibold transition-colors">
+                <button onClick={() => navigate(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-black hover:text-gray-700 font-semibold transition-colors">
                     <ChevronLeftIcon className="h-6 w-6" />
                     <span>返回</span>
                 </button>

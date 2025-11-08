@@ -49,7 +49,7 @@ export interface LotterySet {
     price: number;
     discountPrice?: number;
     imageUrl: string;
-    status: 'AVAILABLE' | 'UPCOMING' | 'SOLD_OUT' | 'ARCHIVED';
+    status: 'AVAILABLE' | 'UPCOMING' | 'SOLD_OUT';
     tags: string[];
     releaseDate?: string;
     description: string;
@@ -97,8 +97,8 @@ export interface Shipment {
     totalWeightInGrams: number;
     trackingNumber?: string;
     carrier?: string;
-    requestedAt: any; // Allow serverTimestamp
-    shippedAt?: any;
+    requestedAt: string;
+    shippedAt?: string;
 }
 
 export interface PickupRequest {
@@ -107,8 +107,8 @@ export interface PickupRequest {
     username: string;
     status: 'PENDING' | 'READY_FOR_PICKUP' | 'COMPLETED';
     prizeInstanceIds: string[];
-    requestedAt: any; // Allow serverTimestamp
-    completedAt?: any;
+    requestedAt: string;
+    completedAt?: string;
 }
 
 
@@ -127,7 +127,7 @@ export interface QueueEntry {
 export interface Order {
     id: string;
     userId: string;
-    date: any; // Allow serverTimestamp
+    date: string;
     lotterySetTitle: string;
     prizeInstanceIds: string[];
     costInPoints: number;
@@ -142,7 +142,7 @@ export interface Transaction {
     username: string;
     type: 'RECHARGE' | 'DRAW' | 'RECYCLE' | 'ADMIN_ADJUSTMENT' | 'SHIPPING' | 'PICKUP_REQUEST';
     amount: number;
-    date: any; // Allow serverTimestamp
+    date: string;
     description: string;
     prizeInstanceIds?: string[];
 }

@@ -362,8 +362,8 @@ export const initialMockLotterySets: LotterySet[] = [
 ];
 
 export const mockUsers: User[] = [
-    { id: 'user-1', email: 'test@example.com', username: 'TestUser', points: 5000, role: 'USER', shippingAddresses: [] },
-    { id: 'user-tester', email: '123123@AAA', username: '測試達人', points: 99999, role: 'ADMIN', shippingAddresses: [] }
+    { id: 'user-1', email: 'test@example.com', password: 'password123', username: 'TestUser', points: 5000, role: 'USER', shippingAddresses: [] },
+    { id: 'user-tester', email: '123123@aaa', password: '123123', username: '測試達人', points: 99999, role: 'ADMIN', shippingAddresses: [] }
 ];
 
 export const mockOrders: Order[] = [];

@@ -1,31 +1,27 @@
-
 import React, { useState } from 'react';
-import { AdminSiteSettings } from './AdminSiteSettings.tsx';
-import { AdminProductManagement } from './AdminProductManagement.tsx';
-import { AdminCategoryManagement } from './AdminCategoryManagement.tsx';
-import { AdminUserManagement } from './AdminUserManagement.tsx';
-import { AdminTransactionHistory } from './AdminTransactionHistory.tsx';
-import { AdminFinancialReport } from './AdminFinancialReport.tsx';
-import { AdminShipmentManagement } from './AdminShipmentManagement.tsx';
-import { AdminPickupManagement } from './AdminPickupManagement.tsx';
-import { ListBulletIcon, CogIcon, UsersIcon, TicketIcon, ChartBarIcon, TruckIcon, BuildingStorefrontIcon } from './icons.tsx';
-// MODIFICATION: Import AppState and LotterySet from the correct central types file.
-import type { AppState, LotterySet } from '../types.ts';
-
-interface AdminPageProps {
-  state: AppState;
-  dispatch: React.Dispatch<any>;
-  actions: any;
-  onChangePassword: (currentPassword: string, newPassword: string) => Promise<{success: boolean, message: string}>;
-}
+import { AdminSiteSettings } from './AdminSiteSettings';
+import { AdminProductManagement } from './AdminProductManagement';
+import { AdminCategoryManagement } from './AdminCategoryManagement';
+import { AdminUserManagement } from './AdminUserManagement';
+import { AdminTransactionHistory } from './AdminTransactionHistory';
+import { AdminFinancialReport } from './AdminFinancialReport';
+import { AdminShipmentManagement } from './AdminShipmentManagement';
+import { AdminPickupManagement } from './AdminPickupManagement';
+import { ListBulletIcon, CogIcon, UsersIcon, TicketIcon, ChartBarIcon, TruckIcon, BuildingStorefrontIcon } from './icons';
+import type { LotterySet } from '../types';
+import { useSiteStore } from '../store/siteDataStore';
+import { useAuthStore } from '../store/authStore';
 
 type AdminTab = 'site' | 'products' | 'categories' | 'users' | 'transactions' | 'financials' | 'shipments' | 'pickups';
 
-export const AdminPage: React.FC<AdminPageProps> = ({ state, dispatch, actions, onChangePassword }) => {
+export const AdminPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<AdminTab>('products');
     const [transactionFilter, setTransactionFilter] = useState('');
     
-    const { siteConfig, lotterySets, categories, users, transactions, inventory, orders, currentUser, shipments, pickupRequests } = state;
+    // Get state from stores
+    const { siteConfig, lotterySets, categories, ...siteActions } = useSiteStore();
+    const { currentUser, inventory, orders, shipments, pickupRequests, transactions, ...authActions } = useAuthStore();
+    const users = []; // TODO: Add admin action to fetch all users
 
     const handleViewUserTransactions = (username: string) => {
         setTransactionFilter(username);
@@ -42,21 +38,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ state, dispatch, actions, 
     const handleSaveLotterySet = async (set: LotterySet): Promise<void> => {
       const exists = lotterySets.some(s => s.id === set.id);
       if (exists) {
-          await actions.updateLotterySet(set);
+          await siteActions.updateLotterySet(set);
       } else {
-          const newSetWithDefaults = { ...set, id: `lottery-${Date.now()}`, drawnTicketIndices: [] };
-          await actions.addLotterySet(newSetWithDefaults);
+          // The backend should assign an ID
+          await siteActions.addLotterySet(set);
       }
     };
-
 
     const renderTabContent = () => {
         switch (activeTab) {
             case 'site':
                 return <AdminSiteSettings 
                             siteConfig={siteConfig} 
-                            onSaveSiteConfig={(config) => dispatch({ type: 'UPDATE_SITE_CONFIG', payload: config })}
-                            onChangePassword={onChangePassword}
+                            onSaveSiteConfig={siteActions.updateSiteConfig}
+                            onChangePassword={authActions.changePassword}
                             lotterySets={lotterySets}
                             categories={categories}
                         />;
@@ -65,19 +60,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ state, dispatch, actions, 
                             lotterySets={lotterySets}
                             categories={categories}
                             onSaveLotterySet={handleSaveLotterySet}
-                            onDeleteLotterySet={actions.deleteLotterySet}
+                            onDeleteLotterySet={siteActions.deleteLotterySet}
                         />;
             case 'categories':
                 return <AdminCategoryManagement 
                             categories={categories}
-                            onSaveCategory={(cats) => dispatch({ type: 'SET_CATEGORIES', payload: cats })}
+                            onSaveCategory={siteActions.saveCategories}
                         />;
             case 'users':
                 return <AdminUserManagement 
                             users={users}
                             currentUser={currentUser}
-                            onUpdateUserPoints={(userId, newPoints, notes) => actions.adminAdjustUserPoints(userId, newPoints, notes)}
-                            onUpdateUserRole={actions.updateUserRole}
+                            onUpdateUserPoints={authActions.adminAdjustUserPoints}
+                            onUpdateUserRole={authActions.updateUserRole}
                             onViewUserTransactions={handleViewUserTransactions}
                         />;
             case 'transactions':
@@ -94,13 +89,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ state, dispatch, actions, 
                             shipments={shipments}
                             users={users}
                             inventory={inventory}
-                            onUpdateShipmentStatus={actions.updateShipmentStatus}
+                            onUpdateShipmentStatus={authActions.updateShipmentStatus}
                         />;
             case 'pickups':
                 return <AdminPickupManagement
                             pickupRequests={pickupRequests}
                             inventory={inventory}
-                            onUpdatePickupRequestStatus={actions.updatePickupRequestStatus}
+                            onUpdatePickupRequestStatus={authActions.updatePickupRequestStatus}
                         />;
             default:
                 return null;
@@ -133,7 +128,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ state, dispatch, actions, 
                         <TabButton tab="pickups" label="自取管理" icon={<BuildingStorefrontIcon className="w-5 h-5" />} />
                         <TabButton tab="products" label="商品管理" icon={<TicketIcon className="w-5 h-5"/>} />
                         <TabButton tab="categories" label="分類管理" icon={<ListBulletIcon className="w-5 h-5" />} />
-                        <TabButton tab="users" label="使用者管理" icon={<UsersIcon className="w-5 h-5" />} />
+                        <TabButton tab="users" label="使用者管理" icon={<UsersIcon className="w-5 h-5" />} disabled={true} />
                         <TabButton tab="transactions" label="交易紀錄" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>} />
                         <TabButton tab="site" label="網站設定" icon={<CogIcon className="w-5 h-5" />} />
                     </nav>

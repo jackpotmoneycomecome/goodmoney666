@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
-// New mode for re-authentication
-type AdminModalMode = 're-auth';
+import React, { useState } from 'react';
 
 interface AdminAuthModalProps {
     authError: string | null;

@@ -1,27 +1,15 @@
-
 import React, { useState, useMemo } from 'react';
-// MODIFICATION: Import AppState from the correct central types file.
-import type { User, Order, PrizeInstance, Shipment, ShippingAddress, LotterySet, PickupRequest, AppState } from '../types.ts';
-import { ChevronLeftIcon, PlusCircleIcon, GiftIcon, ListBulletIcon, CheckCircleIcon, PackageIcon, MapPinIcon, PencilIcon, TrashIcon, BuildingStorefrontIcon } from './icons.tsx';
-import { RechargeModal } from './RechargeModal.tsx';
-import { ConfirmationModal } from './ConfirmationModal.tsx';
-import { ShippingRequestModal } from './ShippingRequestModal.tsx';
-import { AddressFormModal } from './AddressFormModal.tsx';
-import { PickupRequestModal } from './PickupRequestModal.tsx';
-import { RECYCLABLE_GRADES, RECYCLE_VALUE, SHIPPING_BASE_FEE_POINTS, SHIPPING_BASE_WEIGHT_G, SHIPPING_EXTRA_FEE_PER_KG } from '../data/mockData.ts';
-
-interface ProfilePageProps {
-    user: User;
-    state: AppState;
-    actions: any;
-    onBack: () => void;
-}
-
-const gradeOrder: Record<string, number> = {
-    'A賞': 1, 'B賞': 2, 'C賞': 3, 'D賞': 4, 'E賞': 5, 'F賞': 6, 'G賞': 7, '最後賞': 0, '一般賞': 8
-};
-
-type SelectionMode = 'none' | 'recycle' | 'shipping' | 'pickup';
+import { useNavigate } from 'react-router-dom';
+import type { User, Order, PrizeInstance, Shipment, ShippingAddress, LotterySet, PickupRequest } from '../types';
+import { useAuthStore } from '../store/authStore';
+import { useSiteStore } from '../store/siteDataStore';
+import { ChevronLeftIcon, PlusCircleIcon, GiftIcon, ListBulletIcon, CheckCircleIcon, PackageIcon, MapPinIcon, PencilIcon, TrashIcon, BuildingStorefrontIcon } from './icons';
+import { RechargeModal } from './RechargeModal';
+import { ConfirmationModal } from './ConfirmationModal';
+import { ShippingRequestModal } from './ShippingRequestModal';
+import { AddressFormModal } from './AddressFormModal';
+import { PickupRequestModal } from './PickupRequestModal';
+import { RECYCLABLE_GRADES, RECYCLE_VALUE, SHIPPING_BASE_FEE_POINTS, SHIPPING_BASE_WEIGHT_G, SHIPPING_EXTRA_FEE_PER_KG } from '../data/mockData';
 
 interface InventoryViewProps {
     allPrizes: PrizeInstance[];
@@ -31,6 +19,12 @@ interface InventoryViewProps {
     selectedPrizeIds: Set<string>;
     onPrizeSelect: (prizeId: string) => void;
 }
+
+const gradeOrder: Record<string, number> = {
+    'A賞': 1, 'B賞': 2, 'C賞': 3, 'D賞': 4, 'E賞': 5, 'F賞': 6, 'G賞': 7, '最後賞': 0, '一般賞': 8
+};
+
+type SelectionMode = 'none' | 'recycle' | 'shipping' | 'pickup';
 
 const InventoryView: React.FC<InventoryViewProps> = ({ allPrizes, lotterySets, onRecycle, selectionMode, selectedPrizeIds, onPrizeSelect }) => {
     
@@ -331,7 +325,12 @@ const PickupRequestsView: React.FC<{
 
 const AddressManagementView: React.FC<{
     addresses: ShippingAddress[];
-    actions: any;
+    actions: {
+        saveShippingAddress: (address: Omit<ShippingAddress, 'id' | 'isDefault'>) => Promise<void>;
+        updateShippingAddress: (addressId: string, addressData: Omit<ShippingAddress, 'id' | 'isDefault'>) => Promise<void>;
+        deleteShippingAddress: (addressId: string) => Promise<void>;
+        setDefaultShippingAddress: (addressId: string) => Promise<void>;
+    };
 }> = ({ addresses, actions }) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState<ShippingAddress | null>(null);
@@ -422,23 +421,29 @@ const AddressManagementView: React.FC<{
     );
 };
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, onBack }) => {
-    const { orders, inventory, shipments, lotterySets, pickupRequests } = state;
-    const userOrders: Order[] = useMemo(() => orders.filter((o: Order) => o.userId === user.id), [orders, user.id]);
-    const userShipments: Shipment[] = useMemo(() => shipments.filter((s: Shipment) => s.userId === user.id), [shipments, user.id]);
-    const userPickupRequests: PickupRequest[] = useMemo(() => pickupRequests.filter((p: PickupRequest) => p.userId === user.id), [pickupRequests, user.id]);
-    const allPrizes: PrizeInstance[] = useMemo(() => Object.values(inventory).filter((p: PrizeInstance) => p.userId === user.id), [inventory, user.id]);
-    
+export const ProfilePage: React.FC = () => {
+    const navigate = useNavigate();
+    const { 
+        currentUser, orders, inventory, shipments, pickupRequests, 
+        rechargePoints, recyclePrize, batchRecyclePrizes, requestShipment, requestPickup,
+        ...addressActions
+    } = useAuthStore();
+    const { lotterySets } = useSiteStore();
+
     const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'inventory' | 'shipments' | 'pickups' | 'addresses' | 'history'>('inventory');
     const [recyclingCandidate, setRecyclingCandidate] = useState<PrizeInstance | null>(null);
     
-    // State for batch operations
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedPrizeIds, setSelectedPrizeIds] = useState<Set<string>>(new Set());
     const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
     const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
     const [isPickupModalOpen, setIsPickupModalOpen] = useState(false);
+
+    if (!currentUser) {
+        return <div className="text-center p-16">載入使用者資料...</div>;
+    }
+    const allPrizes = Object.values(inventory);
 
     const toggleSelectionMode = (mode: SelectionMode) => {
         setSelectionMode(prev => prev === mode ? 'none' : mode);
@@ -496,7 +501,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
     
     const handleConfirmBatchRecycle = () => {
         if (selectedPrizeIds.size > 0) {
-            actions.batchRecyclePrizes(Array.from(selectedPrizeIds));
+            batchRecyclePrizes(Array.from(selectedPrizeIds));
         }
         setIsBatchConfirmOpen(false);
         setSelectionMode('none');
@@ -509,13 +514,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
 
     const handleConfirmRecycle = () => {
         if (recyclingCandidate) {
-            actions.recyclePrize(recyclingCandidate.instanceId);
+            recyclePrize(recyclingCandidate.instanceId);
             setRecyclingCandidate(null);
         }
     };
 
     const handleConfirmShipment = async (prizeIds: string[], address: ShippingAddress) => {
-        const result = await actions.requestShipment(prizeIds, address);
+        const result = await requestShipment(prizeIds, address);
         if (result.success) {
             setSelectionMode('none');
             setSelectedPrizeIds(new Set());
@@ -524,7 +529,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
     };
     
     const handleConfirmPickup = async () => {
-        const result = await actions.requestPickup(Array.from(selectedPrizeIds));
+        const result = await requestPickup(Array.from(selectedPrizeIds));
         if (result.success) {
             setSelectionMode('none');
             setSelectedPrizeIds(new Set());
@@ -555,16 +560,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
             <RechargeModal 
                 isOpen={isRechargeModalOpen}
                 onClose={() => setIsRechargeModalOpen(false)}
-                onConfirmPurchase={actions.rechargePoints}
-                currentUserPoints={user.points}
+                onConfirmPurchase={rechargePoints}
+                currentUserPoints={currentUser.points}
             />
              <ShippingRequestModal
                 isOpen={isShippingModalOpen}
                 onClose={() => setIsShippingModalOpen(false)}
                 selectedPrizes={selectedShippingPrizes}
-                user={user}
+                user={currentUser}
                 onConfirmShipment={handleConfirmShipment}
-                onSaveAddress={actions.saveShippingAddress}
+                onSaveAddress={addressActions.saveShippingAddress}
             />
              <PickupRequestModal
                 isOpen={isPickupModalOpen}
@@ -606,9 +611,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
             />
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
                 <div className="relative mb-6">
-                    <button onClick={onBack} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-gray-700 hover:text-black font-semibold transition-colors">
+                    <button onClick={() => navigate(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-gray-700 hover:text-black font-semibold transition-colors">
                     <ChevronLeftIcon className="h-6 w-6" />
-                    <span>返回首頁</span>
+                    <span>返回</span>
                     </button>
                     <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800">個人資料</h1>
                 </div>
@@ -616,9 +621,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
                 <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">你好，{user.username}！</h2>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">你好，{currentUser.username}！</h2>
                             <div className="text-4xl font-extrabold text-black">
-                                {user.points.toLocaleString()} <span className="text-2xl text-gray-500 font-medium">P</span>
+                                {currentUser.points.toLocaleString()} <span className="text-2xl text-gray-500 font-medium">P</span>
                             </div>
                             <p className="text-gray-500">剩餘點數</p>
                         </div>
@@ -687,10 +692,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, state, actions, 
                             onPrizeSelect={handlePrizeSelect}
                         />
                     )}
-                    {activeTab === 'shipments' && <ShipmentsView shipments={userShipments} inventory={inventory} />}
-                    {activeTab === 'pickups' && <PickupRequestsView pickupRequests={userPickupRequests} inventory={inventory} />}
-                    {activeTab === 'addresses' && <AddressManagementView addresses={user.shippingAddresses || []} actions={actions} />}
-                    {activeTab === 'history' && <HistoryView userOrders={userOrders} inventory={inventory} />}
+                    {activeTab === 'shipments' && <ShipmentsView shipments={shipments} inventory={inventory} />}
+                    {activeTab === 'pickups' && <PickupRequestsView pickupRequests={pickupRequests} inventory={inventory} />}
+                    {activeTab === 'addresses' && <AddressManagementView addresses={currentUser.shippingAddresses || []} actions={addressActions} />}
+                    {activeTab === 'history' && <HistoryView userOrders={orders} inventory={inventory} />}
                 </div>
             </div>
             

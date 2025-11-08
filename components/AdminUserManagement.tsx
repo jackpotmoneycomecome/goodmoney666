@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import type { User } from '../types.ts';
+import type { User } from '../types';
 
 interface UserRowProps {
     user: User;

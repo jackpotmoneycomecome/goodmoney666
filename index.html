@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ichiban Kuji Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Add Babel to transpile JSX/TSX in the browser -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="importmap">
 {
   "imports": {
@@ -15,6 +13,8 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "zustand": "https://aistudiocdn.com/zustand@^5.0.8",
+    "zustand/": "https://aistudiocdn.com/zustand@^5.0.8/",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.0",
     "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
@@ -60,7 +60,6 @@
 </head>
   <body class="bg-white">
     <div id="root"></div>
-    <!-- Change script type to text/babel and add presets for React and TypeScript -->
-    <script type="text/babel" data-presets="react,typescript" data-type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
